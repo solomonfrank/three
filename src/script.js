@@ -41,14 +41,18 @@ const renderer = new THREE.WebGLRenderer({ canvas });
 
 renderer.setSize(size.width, size.height);
 
-let time = Date.now();
+// let time = Date.now();
+
+const time = new THREE.Clock();
 
 const moveX = () => {
-  const currentTime = Date.now();
-  const deltaTime = currentTime - time;
+  // const currentTime = Date.now();
+  // const deltaTime = currentTime - time;
 
-  time = currentTime;
-  mesh.rotation.y += 0.001 * deltaTime;
+  // time = currentTime;
+  const elapsed = time.getElapsedTime();
+  console.log("elapsed", elapsed)
+  mesh.rotation.y = time.getElapsedTime();
 
   renderer.render(scene, camera);
 
