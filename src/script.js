@@ -59,6 +59,38 @@ controls.enableDamping = true;
 const renderer = new THREE.WebGLRenderer({ canvas });
 
 renderer.setSize(size.width, size.height);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+window.addEventListener("resize", () => {
+  size.width = window.innerWidth;
+  size.height = window.innerHeight;
+
+  camera.aspect = size.width / size.height;
+  camera.updateProjectionMatrix();
+
+  renderer.setSize(size.width, size.height);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+});
+
+window.addEventListener("dblclick", (event) => {
+  console.log(document.fullscreenElement);
+  const fullscreenElement =
+    document.fullscreenElement || document.webkitFullscreenElement; // for safari user we add webkit
+
+  if (!fullscreenElement) {
+    if (canvas.requestFullscreen) {
+      canvas.requestFullscreen();
+    } else {
+      canvas.webkitRequestFullscreen();
+    }
+  } else {
+    if (document.exitFullscreen) {
+      document.exitFullscreen();
+    } else {
+      document.webkitExitFullscreen();
+    }
+  }
+});
 
 const clock = new THREE.Clock();
 
