@@ -2,11 +2,24 @@ import "./style.css";
 import * as THREE from "three";
 import gsap from "gsap";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
+import { BufferAttribute } from "three";
 
 const scene = new THREE.Scene();
 
-const geometry = new THREE.BoxGeometry(1, 1, 1);
-const materal = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+// const geometry = new THREE.BoxBufferGeometry(1, 1, 1, 2, 2, 2);
+
+const positionArr = new Float32Array([0, 0, 0, 0, 1, 0, 0, 0, 1]); //  [x, y, z, x, y, z]
+
+const positionArribute = new THREE.BufferAttribute(positionArr, 3);
+
+const geometry = new THREE.BufferGeometry();
+
+geometry.setAttribute("position", positionArribute);
+
+const materal = new THREE.MeshBasicMaterial({
+  color: 0xff0000,
+  wireframe: true,
+});
 const mesh = new THREE.Mesh(geometry, materal);
 
 // mesh.position.z = -1;
