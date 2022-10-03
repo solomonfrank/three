@@ -8,11 +8,19 @@ const scene = new THREE.Scene();
 
 // const geometry = new THREE.BoxBufferGeometry(1, 1, 1, 2, 2, 2);
 
-const positionArr = new Float32Array([0, 0, 0, 0, 1, 0, 0, 0, 1]); //  [x, y, z, x, y, z]
+const geometry = new THREE.BufferGeometry();
+
+const count = 100;
+
+const positionArr = new Float32Array(count * 3 * 3); //  [x, y, z, x, y, z]
+console.log("position before", positionArr);
+for (let i = 0; i < count * 3 * 3; i++) {
+  positionArr[i] = (Math.random() - 0.5) * 4;
+}
+
+console.log("position", positionArr);
 
 const positionArribute = new THREE.BufferAttribute(positionArr, 3);
-
-const geometry = new THREE.BufferGeometry();
 
 geometry.setAttribute("position", positionArribute);
 
