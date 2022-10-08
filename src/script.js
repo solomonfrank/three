@@ -1,322 +1,273 @@
 import "./style.css";
 import * as THREE from "three";
-import gsap from "gsap";
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
-import { FontLoader } from "three/examples/jsm/loaders/FontLoader";
-import { TextGeometry } from "three/examples/jsm/geometries/TextGeometry";
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import * as dat from "dat.gui";
 
-// // debugger
-// const gui = new dat.GUI({ closed: true });
+/**
+ * Base
+ */
+// Debug
+const gui = new dat.GUI();
 
-// //loading texture 1
+// Canvas
+const canvas = document.querySelector("canvas.webgl");
 
-// // const image = new Image();
-
-// // const texture = new THREE.Texture(image);
-
-// // image.onload = () => {
-// //   texture.needsUpdate = true;
-// // };
-
-// // image.src = "/textures/door/color.jpg";
-
-// const loadingManager = new THREE.LoadingManager();
-
-// loadingManager.onStart = () => {
-//   console.log("start");
-// };
-
-// loadingManager.onLoad = () => {
-//   console.log("loaded");
-// };
-
-// loadingManager.onProgress = (e) => {
-//   console.log("Porgress", e);
-// };
-
-// const textureLoader = new THREE.TextureLoader(loadingManager);
-// const texture = textureLoader.load("/textures/door/color.jpg");
-
-// const scene = new THREE.Scene();
-// // const geometry = new THREE.BoxBufferGeometry(1, 1, 1, 2, 2, 2);
-// // const geometry = new THREE.BufferGeometry();
-// // const count = 100;
-
-// // const positionArr = new Float32Array(count * 3 * 3); //  [x, y, z, x, y, z]
-// // console.log("position before", positionArr);
-// // for (let i = 0; i < count * 3 * 3; i++) {
-// //   positionArr[i] = (Math.random() - 0.5) * 4;
-// // }
-
-// // console.log("position", positionArr);
-
-// // const positionArribute = new THREE.BufferAttribute(positionArr, 3);
-
-// // geometry.setAttribute("position", positionArribute);
-
-// // const materal = new THREE.MeshBasicMaterial({
-// //   map: texture,
-// //   wireframe: true,
-// // });
-// // const mesh = new THREE.Mesh(geometry, materal);
-
-// // mesh.position.z = -1;
-// // mesh.position.x = 3;
-// // mesh.position.y = -1;
-
-// // or
-// // mesh.position.set(3, -1, -1);
-// // scene.add(mesh);
-
-// // const material = new THREE.MeshNormalMaterial();
-
-// const material = new THREE.MeshStandardMaterial();
-// material.roughness = 0.45;
-// material.metalness = 0.65;
-
-// const sphereMesh = new THREE.Mesh(
-//   new THREE.SphereBufferGeometry(0.5, 16, 16),
-//   material
-// );
-
-// sphereMesh.position.z = 3;
-
-// scene.add(sphereMesh);
-
-// gui
-//   .add(sphereMesh.position, "y", -3, 3, 0.01)
-//   .min(-3)
-//   .max(3)
-//   .step(0.01)
-//   .name("elevation");
-
-// gui.add(sphereMesh, "visible");
-
-// gui.add(material, "wireframe");
-
-// const parameters = {
-//   color: 0xff0000,
-//   spin: () => {
-//     gsap.to(sphereMesh.rotation, { y: "+=45" });
-//   },
-// };
-
-// gui.addColor(parameters, "color").onChange(() => {
-//   material.color.set(parameters.color);
-// });
-
-// gui.add(parameters, "spin");
-// // gui.add(mesh.position, "x", -3, 3, 0.01);
-// // gui.add(mesh.position, "z", -3, 3, 0.01);
-// // const axesHelper = new THREE.AxesHelper();
-
-// // scene.add(axesHelper);
-
-// const size = {
-//   width: window.innerWidth,
-//   height: window.innerHeight,
-// };
-
-// const cursor = {
-//   x: 0,
-//   y: 0,
-// };
-
-// window.addEventListener("mousemove", (e) => {
-//   cursor.x = e.clientX / size.width - 0.5;
-//   cursor.y = -(e.clientY / size.height - 0.5);
-// });
-
-// const camera = new THREE.PerspectiveCamera(
-//   75,
-//   size.width / size.height,
-//   0.01,
-//   100
-// );
-// camera.position.z = 3;
-// // camera.position.z = 2;
-// // camera.position.x = 2;
-
-// camera.lookAt(sphereMesh.position);
-// scene.add(camera);
-
-// // controls
-// const canvas = document.querySelector(".webgl");
-// const controls = new OrbitControls(camera, canvas);
-// controls.enableDamping = true;
-
-// // Render the scene
-
-// const renderer = new THREE.WebGLRenderer({ canvas });
-
-// renderer.setSize(size.width, size.height);
-// renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-
-// window.addEventListener("resize", () => {
-//   size.width = window.innerWidth;
-//   size.height = window.innerHeight;
-
-//   camera.aspect = size.width / size.height;
-//   camera.updateProjectionMatrix();
-
-//   renderer.setSize(size.width, size.height);
-//   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-// });
-
-// window.addEventListener("dblclick", (event) => {
-//   console.log(document.fullscreenElement);
-//   const fullscreenElement =
-//     document.fullscreenElement || document.webkitFullscreenElement; // for safari user we add webkit
-
-//   if (!fullscreenElement) {
-//     if (canvas.requestFullscreen) {
-//       canvas.requestFullscreen();
-//     } else {
-//       canvas.webkitRequestFullscreen();
-//     }
-//   } else {
-//     if (document.exitFullscreen) {
-//       document.exitFullscreen();
-//     } else {
-//       document.webkitExitFullscreen();
-//     }
-//   }
-// });
-
-// const clock = new THREE.Clock();
-
-// const moveX = () => {
-//   // const elapsed = clock.getElapsedTime();
-//   // camera.position.y = cursor.y * 2;
-//   // camera.position.x = Math.sin(cursor.x * Math.PI * 2) * 3;
-//   // camera.position.z = Math.cos(cursor.x * Math.PI * 2) * 3;
-
-//   // camera.lookAt(mesh.position);
-
-//   controls.update();
-
-//   renderer.render(scene, camera);
-
-//   requestAnimationFrame(moveX);
-// };
-
-// moveX();
-
-const canvas = document.querySelector(".webgl");
-
+// Scene
 const scene = new THREE.Scene();
 
-const size = {
+//fog
+const fog = new THREE.Fog("#262837", 1, 15);
+
+scene.fog = fog;
+
+/**
+ * Textures
+ */
+const textureLoader = new THREE.TextureLoader();
+const doorColorTexture = textureLoader.load("/textures/door/color.jpg");
+const doorAlphaTexture = textureLoader.load("/textures/door/alpha.jpg");
+const doorAmbientOcclusionTexture = textureLoader.load(
+  "/textures/door/ambientOcclusion.jpg"
+);
+const doorHeightTexture = textureLoader.load("/textures/door/height.jpg");
+const doorNormalTexture = textureLoader.load("/textures/door/normal.jpg");
+const doorMetalnessTexture = textureLoader.load("/textures/door/metalness.jpg");
+const doorRoughnessTexture = textureLoader.load("/textures/door/roughness.jpg");
+
+const bricksColorTexture = textureLoader.load("/textures/bricks/color.jpg");
+const bricksAmbientOcclusionTexture = textureLoader.load(
+  "/textures/bricks/ambientOcclusion.jpg"
+);
+const bricksNormalTexture = textureLoader.load("/textures/bricks/normal.jpg");
+const bricksRoughnessTexture = textureLoader.load(
+  "/textures/bricks/roughness.jpg"
+);
+
+const grassColorTexture = textureLoader.load("/textures/grass/color.jpg");
+const grassAmbientOcclusionTexture = textureLoader.load(
+  "/textures/grass/ambientOcclusion.jpg"
+);
+const grassNormalTexture = textureLoader.load("/textures/grass/normal.jpg");
+const grassRoughnessTexture = textureLoader.load(
+  "/textures/grass/roughness.jpg"
+);
+
+/**
+ * House
+ */
+// create group
+
+const house = new THREE.Group();
+
+scene.add(house);
+
+// wall
+const walls = new THREE.Mesh(
+  new THREE.BoxBufferGeometry(4, 2.5, 4),
+  new THREE.MeshStandardMaterial({
+    map: bricksColorTexture,
+    aoMap: bricksAmbientOcclusionTexture,
+    normalMap: bricksNormalTexture,
+    roughnessMap: bricksRoughnessTexture,
+  })
+);
+
+walls.position.y = 2.5 / 2;
+
+walls.geometry.setAttribute(
+  "uv2",
+  new THREE.Float16BufferAttribute(walls.geometry.attributes.uv.array, 2)
+);
+
+house.add(walls);
+
+//roof
+
+const roof = new THREE.Mesh(
+  new THREE.ConeBufferGeometry(3.5, 1, 4),
+  new THREE.MeshStandardMaterial({ color: "#b35f45" })
+);
+
+roof.position.y = 2.5 + 0.5;
+roof.rotation.y = Math.PI * 0.25;
+
+house.add(roof);
+
+// door
+
+const door = new THREE.Mesh(
+  new THREE.PlaneBufferGeometry(2, 2, 100, 100),
+  new THREE.MeshStandardMaterial({
+    map: doorColorTexture,
+    transparent: true,
+    alphaMap: doorAlphaTexture,
+    aoMap: doorAmbientOcclusionTexture,
+    displacementMap: doorHeightTexture,
+    displacementScale: 0.1,
+    normalMap: doorNormalTexture,
+    metalRoughness: doorRoughnessTexture,
+    metalnessMap: doorMetalnessTexture,
+  })
+);
+
+door.geometry.setAttribute(
+  "uv2",
+  new THREE.Float16BufferAttribute(door.geometry.attributes.uv.array, 2)
+);
+
+door.position.y = 1;
+door.position.z = 4 / 2 + 0.01;
+
+house.add(door);
+
+// Floor
+const floor = new THREE.Mesh(
+  new THREE.PlaneGeometry(20, 20),
+  new THREE.MeshStandardMaterial({ color: "#a9c388" })
+);
+floor.rotation.x = -Math.PI * 0.5;
+floor.position.y = 0;
+scene.add(floor);
+
+// bushes
+
+const bushGeometry = new THREE.SphereBufferGeometry(1, 16, 16);
+const bushMaterial = new THREE.MeshStandardMaterial({ color: "#89c854" });
+
+const bush1 = new THREE.Mesh(bushGeometry, bushMaterial);
+bush1.position.set(0.8, 0.2, 2.2);
+bush1.scale.set(0.5, 0.5, 0.5);
+
+const bush2 = new THREE.Mesh(bushGeometry, bushMaterial);
+bush2.position.set(1.4, 0.1, 2.1);
+bush2.scale.set(0.25, 0.25, 0.25);
+
+const bush3 = new THREE.Mesh(bushGeometry, bushMaterial);
+bush3.position.set(-0.8, 0.2, 2.2);
+bush3.scale.set(0.5, 0.5, 0.5);
+
+const bush4 = new THREE.Mesh(bushGeometry, bushMaterial);
+bush4.position.set(-1, 0.05, 2.6);
+bush4.scale.set(0.15, 0.15, 0.15);
+house.add(bush1, bush2, bush3, bush4);
+
+/**
+ * Grave
+ */
+
+// Grave
+
+const graves = new THREE.Group();
+scene.add(graves);
+
+const graveGeometry = new THREE.BoxBufferGeometry(0.5, 0.7, 0.1);
+const graveMaterial = new THREE.MeshStandardMaterial({ color: "#b2b6b1" });
+
+// graves.add(bush1, bush2);
+
+for (let i = 0; i < 50; i++) {
+  const graveMesh = new THREE.Mesh(graveGeometry, graveMaterial);
+  const angle = Math.random() * Math.PI * 2;
+  const radius = 3 + Math.random() * 6;
+  graveMesh.position.x = radius * Math.sin(angle);
+  graveMesh.position.y = 0.3;
+  graveMesh.position.z = radius * Math.cos(angle);
+
+  graveMesh.rotation.y = (Math.random() - 0.5) * 0.4;
+  graveMesh.rotation.z = (Math.random() - 0.5) * 0.4;
+  graves.add(graveMesh);
+}
+
+/**
+ * Lights
+ */
+// Ambient light
+const ambientLight = new THREE.AmbientLight("#b9d5ff", 0.12);
+gui.add(ambientLight, "intensity").min(0).max(1).step(0.001);
+scene.add(ambientLight);
+
+// Directional light
+const moonLight = new THREE.DirectionalLight("#b9d5ff", 0.12);
+moonLight.position.set(4, 5, -2);
+gui.add(moonLight, "intensity").min(0).max(1).step(0.001);
+gui.add(moonLight.position, "x").min(-5).max(5).step(0.001);
+gui.add(moonLight.position, "y").min(-5).max(5).step(0.001);
+gui.add(moonLight.position, "z").min(-5).max(5).step(0.001);
+scene.add(moonLight);
+
+//point light
+
+const pointLight = new THREE.PointLight("#ff7d46", 1, 7);
+pointLight.position.set(0, 2.2, 2.7);
+house.add(pointLight);
+
+/**
+ * Sizes
+ */
+const sizes = {
   width: window.innerWidth,
   height: window.innerHeight,
 };
 
-const textureLoader = new THREE.TextureLoader();
-const matcapTexture = textureLoader.load("/textures/matcaps/8.png");
-const fontLoader = new FontLoader();
+window.addEventListener("resize", () => {
+  // Update sizes
+  sizes.width = window.innerWidth;
+  sizes.height = window.innerHeight;
 
-fontLoader.load("/fonts/helvetiker_regular.typeface.json", (font) => {
-  const textGeometry = new TextGeometry("Frontend Developer", {
-    font: font,
-    size: 0.5,
-    height: 0.2,
-    bevelEnabled: true,
-    curveSegments: 4,
-    bevelThickness: 0.03,
-    bevelSegments: 2,
-    bevelOffset: 0,
-    bevelSize: 0.02,
-  });
+  // Update camera
+  camera.aspect = sizes.width / sizes.height;
+  camera.updateProjectionMatrix();
 
-  const textMaterial = new THREE.MeshMatcapMaterial();
-  textMaterial.matcap = matcapTexture;
-  const textMesh = new THREE.Mesh(textGeometry, textMaterial);
-
-  // textGeometry.computeBoundingBox();
-  // textGeometry.translate(
-  //   -(textGeometry.boundingBox.max.x - 0.02) * 0.5,
-  //   -(textGeometry.boundingBox.max.y - 0.02) * 0.5,
-  //   -(textGeometry.boundingBox.max.z - 0.03) * 0.5
-  // );
-
-  textGeometry.center();
-  console.log(textGeometry.boundingBox);
-
-  scene.add(textMesh);
-  const donutGeometry = new THREE.TorusBufferGeometry(0.35, 0.2, 20, 45);
-
-  console.time("donut");
-
-  for (let i = 0; i < 300; i++) {
-    const donutMesh = new THREE.Mesh(donutGeometry, textMaterial);
-    donutMesh.position.x = (Math.random() - 0.5) * 10;
-    donutMesh.position.y = (Math.random() - 0.5) * 10;
-    donutMesh.position.z = (Math.random() - 0.5) * 10;
-
-    donutMesh.rotation.x = Math.random() * Math.PI;
-    donutMesh.rotation.y = Math.random() * Math.PI;
-
-    const scale = Math.random();
-
-    donutMesh.scale.set(scale, scale, scale);
-    scene.add(donutMesh);
-  }
-
-  console.timeEnd("donut");
+  // Update renderer
+  renderer.setSize(sizes.width, sizes.height);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 });
 
-// axes helper
-
-// const axesHelper = new THREE.AxesHelper();
-
-// scene.add(axesHelper);
-
-// object creation
-// const geometry = new THREE.BoxGeometry(1, 1, 1);
-
-// const material = new THREE.MeshBasicMaterial();
-// const cubeMesh = new THREE.Mesh(geometry, material);
-
-// scene.add(cubeMesh);
-
-// camera
+/**
+ * Camera
+ */
+// Base camera
 const camera = new THREE.PerspectiveCamera(
   75,
-  size.width / size.height,
+  sizes.width / sizes.height,
   0.1,
   100
 );
-
-// camera.position.z = 2;
-camera.position.x = 1;
-camera.position.y = 1;
-camera.position.z = 1;
-
+camera.position.x = 4;
+camera.position.y = 2;
+camera.position.z = 5;
 scene.add(camera);
 
+// Controls
 const controls = new OrbitControls(camera, canvas);
 controls.enableDamping = true;
 
-const renderer = new THREE.WebGL1Renderer({ canvas });
+/**
+ * Renderer
+ */
+const renderer = new THREE.WebGLRenderer({
+  canvas: canvas,
+});
+renderer.setSize(sizes.width, sizes.height);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setClearColor("#262837");
 
-renderer.setSize(size.width, size.height);
+/**
+ * Animate
+ */
+const clock = new THREE.Clock();
 
 const tick = () => {
+  const elapsedTime = clock.getElapsedTime();
+
+  // Update controls
   controls.update();
+
+  // Render
   renderer.render(scene, camera);
+
+  // Call tick again on the next frame
   window.requestAnimationFrame(tick);
 };
 
 tick();
-
-window.addEventListener("resize", () => {
-  size.width = window.innerWidth;
-  size.height = window.innerHeight;
-
-  camera.aspect = size.width / size.height;
-
-  camera.updateProjectionMatrix();
-
-  renderer.setSize(size.width, size.height);
-});
