@@ -1,21 +1,12 @@
 import "./style.css";
 import * as THREE from "three";
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import * as dat from "dat.gui";
-import gsap from "gsap";
 
 /**
  * Debug
  */
 const gui = new dat.GUI();
-
-const parameters = {
-  materialColor: "#ffeded",
-};
-
-gui.addColor(parameters, "materialColor").onChange(() => {
-  material.color.set(parameters.materialColor);
-  particleMaterial.color.set(parameters.materialColor);
-});
 
 /**
  * Base
@@ -26,82 +17,104 @@ const canvas = document.querySelector("canvas.webgl");
 // Scene
 const scene = new THREE.Scene();
 
-//Texture;
+const loadingManager = new THREE.LoadingManager();
 
-const textureLoader = new THREE.TextureLoader();
-const gradientTexture = textureLoader.load("/textures/gradients/3.jpg");
-const darkTexture = textureLoader.load("/textures/gradients/5.jpg");
+loadingManager.onStart = () => {
+  console.log("Texture started");
+};
+
+loadingManager.onProgress = () => {
+  console.log("Texture in progress");
+};
+
+loadingManager.onLoad = () => {
+  console.log("Texture loaded");
+};
 
 /**
- * Objects
+ * Textures
+ */
+const textureLoader = new THREE.TextureLoader(loadingManager);
+const colorTexture = textureLoader.load("/textures/door/color.jpg");
+const alphaTexture = textureLoader.load("/textures/door/alpha.jpg");
+const heightTexture = textureLoader.load("/textures/door/height.jpg");
+const normalTexture = textureLoader.load("/textures/door/normal.jpg");
+const ambientOcclusionTexture = textureLoader.load(
+  "/textures/door/ambientOcclusion.jpg"
+);
+const metalnessTexture = textureLoader.load("/textures/door/metalness.jpg");
+const roughnessTexture = textureLoader.load("/textures/door/roughness.jpg");
+
+const matcapTexture = textureLoader.load("/textures/matcaps/1.png");
+const gradientTexture = textureLoader.load("/textures/gradients/3.jpg");
+gradientTexture.magFilter = THREE.NearestFilter;
+gradientTexture.minFilter = THREE.NearestFilter;
+
+// const material = new THREE.MeshBasicMaterial();
+// material.map = colorTexture;
+// material.alphaMap = alphaTexture;
+// material.transparent = true;
+
+// const material = new THREE.MeshNormalMaterial();
+
+// const material = new THREE.MeshMatcapMaterial();
+// material.matcap = matcapTexture
+
+// const material = new THREE.MeshToonMaterial();
+// material.gradientMap = gradientTexture;
+
+const material = new THREE.MeshStandardMaterial();
+// material.roughness = 0.45;
+// material.metalness = 0.65;
+material.map = colorTexture;
+material.aoMap = ambientOcclusionTexture;
+material.metalnessMap = metalnessTexture;
+material.roughnessMap = metalnessTexture;
+// material.aoMapIntensity = 10;
+material.displacementScale = 0.1;
+material.normalMap = normalTexture;
+material.alphaMap = alphaTexture;
+material.transparent = true;
+/**
+ * objects
  */
 
-const material = new THREE.MeshToonMaterial({
-  color: parameters.materialColor,
-  gradientMap: gradientTexture,
-});
-
-const objectDistance = 4;
-
-const mesh1 = new THREE.Mesh(
-  new THREE.TorusBufferGeometry(0.5, 0.6, 16, 69),
+const plane = new THREE.Mesh(
+  new THREE.PlaneBufferGeometry(1, 1, 100, 100),
   material
 );
 
-const mesh2 = new THREE.Mesh(
-  new THREE.ConeBufferGeometry(0.5, 1, 32),
+plane.geometry.setAttribute(
+  "uv2",
+  new THREE.BufferAttribute(plane.geometry.attributes.uv.array, 2)
+);
+
+const sphere = new THREE.Mesh(
+  new THREE.SphereBufferGeometry(0.5, 16, 16),
   material
 );
-const mesh3 = new THREE.Mesh(
-  new THREE.TorusKnotBufferGeometry(0.8, 0.35, 100, 16),
+
+sphere.position.x = 2;
+
+const torus = new THREE.Mesh(
+  new THREE.TorusBufferGeometry(0.3, 0.2, 16, 32),
   material
 );
 
-mesh1.position.y = -objectDistance * 0;
-mesh2.position.y = -objectDistance * 1;
-mesh3.position.y = -objectDistance * 2;
+torus.position.x = -1.5;
 
-const meshes = [mesh1, mesh2, mesh3];
+scene.add(plane, sphere, torus);
 
-scene.add(mesh1, mesh2, mesh3);
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
 
-// particles
+const pointLight = new THREE.PointLight(0xffffff, 0.5);
+pointLight.position.x = 2;
+pointLight.position.y = 3;
+pointLight.position.z = 4;
 
-const count = 500;
-const positions = new Float32Array(count * 3);
+scene.add(pointLight);
 
-for (let i = 0; i < count; i++) {
-  positions[i * 3 + 0] = (Math.random() - 0.5) * 10;
-  positions[i * 3 + 1] =
-    objectDistance * 0.5 - Math.random() * objectDistance * 3;
-  positions[i * 3 + 2] = (Math.random() - 0.5) * 10;
-}
-
-console.log("positions", positions);
-
-const particleGeometry = new THREE.BufferGeometry();
-particleGeometry.setAttribute(
-  "position",
-  new THREE.BufferAttribute(positions, 3)
-);
-
-const particleMaterial = new THREE.PointsMaterial({
-  size: 0.03,
-  color: parameters.materialColor,
-  sizeAttenuation: true,
-});
-
-// points
-const points = new THREE.Points(particleGeometry, particleMaterial);
-scene.add(points);
-
-// light
-
-const directionalLight = new THREE.DirectionalLight("#ffffff", 1);
-
-directionalLight.position.set(1, 1, 0);
-
-scene.add(directionalLight);
+scene.add(ambientLight);
 
 /**
  * Sizes
@@ -111,6 +124,43 @@ const sizes = {
   height: window.innerHeight,
 };
 
+/**
+ * Camera
+ */
+// Base camera
+const camera = new THREE.PerspectiveCamera(
+  75,
+  sizes.width / sizes.height,
+  0.1,
+  100
+);
+
+camera.position.set(0, 0, 3);
+scene.add(camera);
+
+// const cameraHelper = new THREE.CameraHelper();
+
+// scene.add(cameraHelper);
+
+// Controls
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true;
+
+/**
+ * Renderer
+ */
+const renderer = new THREE.WebGLRenderer({
+  canvas: canvas,
+});
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.setSize(sizes.width, sizes.height);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+/**
+ * Animate
+ */
+const clock = new THREE.Clock();
 window.addEventListener("resize", () => {
   // Update sizes
   sizes.width = window.innerWidth;
@@ -125,92 +175,14 @@ window.addEventListener("resize", () => {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 });
 
-/**
- * Camera
- */
-
-const cameraGroup = new THREE.Group();
-scene.add(cameraGroup);
-// Base camera
-const camera = new THREE.PerspectiveCamera(
-  35,
-  sizes.width / sizes.height,
-  0.1,
-  100
-);
-camera.position.z = 6;
-cameraGroup.add(camera);
-
-/**
- * Renderer
- */
-const renderer = new THREE.WebGLRenderer({
-  canvas: canvas,
-  alpha: true,
-});
-renderer.setSize(sizes.width, sizes.height);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-
-let scrollY = window.scrollY;
-
-let currentSection = 0;
-
-window.addEventListener("scroll", (e) => {
-  scrollY = window.scrollY;
-
-  const newSection = Math.round(scrollY / sizes.height);
-  if (newSection != currentSection) {
-    currentSection = newSection;
-    gsap.to(meshes[currentSection].rotation, {
-      x: "+=6",
-      y: "+=3",
-      z: "+=1.5",
-      ease: "power1.out",
-      duration: 1.5,
-    });
-  }
-});
-
-const cursor = {
-  x: 0,
-  y: 0,
-};
-
-window.addEventListener("mousemove", (e) => {
-  cursor.x = e.clientX / sizes.width - 0.5;
-  cursor.y = e.clientY / sizes.height - 0.5;
-});
-
-/**
- * Animate
- */
-const clock = new THREE.Clock();
-let previousTime = 0;
-
 const tick = () => {
   const elapsedTime = clock.getElapsedTime();
-  const deltaTime = elapsedTime - previousTime;
-  previousTime = elapsedTime;
 
-  // Animate camera;
+  sphere.rotation.x = 0.3 * elapsedTime;
+  sphere.rotation.y = 0.3 * elapsedTime;
 
-  camera.position.y = (-scrollY / sizes.height) * objectDistance;
-
-  mesh1.position.x = 2;
-  mesh2.position.x = -2;
-  mesh3.position.x = 2;
-
-  const parallaxX = cursor.x;
-  const parallaxY = -cursor.y;
-  cameraGroup.position.x +=
-    (parallaxX - cameraGroup.position.x) * 5 * deltaTime; // we are multipying by deltaTime to maintaine uniformity on both higher frame per sec device
-  cameraGroup.position.y +=
-    (parallaxY - cameraGroup.position.y) * 5 * deltaTime;
-
-  for (let mesh of meshes) {
-    mesh.rotation.x += deltaTime * 0.1;
-    mesh.rotation.y += deltaTime * 0.12;
-  }
+  // Update controls
+  controls.update();
 
   // Render
   renderer.render(scene, camera);
