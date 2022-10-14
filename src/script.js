@@ -4,117 +4,84 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import * as dat from "dat.gui";
 
 /**
- * Debug
- */
-const gui = new dat.GUI();
-
-/**
  * Base
  */
+// Debug
+const gui = new dat.GUI();
+
 // Canvas
 const canvas = document.querySelector("canvas.webgl");
 
 // Scene
 const scene = new THREE.Scene();
 
-const loadingManager = new THREE.LoadingManager();
-
-loadingManager.onStart = () => {
-  console.log("Texture started");
-};
-
-loadingManager.onProgress = () => {
-  console.log("Texture in progress");
-};
-
-loadingManager.onLoad = () => {
-  console.log("Texture loaded");
-};
-
 /**
- * Textures
+ * Lights
  */
-const textureLoader = new THREE.TextureLoader(loadingManager);
-const colorTexture = textureLoader.load("/textures/door/color.jpg");
-const alphaTexture = textureLoader.load("/textures/door/alpha.jpg");
-const heightTexture = textureLoader.load("/textures/door/height.jpg");
-const normalTexture = textureLoader.load("/textures/door/normal.jpg");
-const ambientOcclusionTexture = textureLoader.load(
-  "/textures/door/ambientOcclusion.jpg"
+
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+// scene.add(ambientLight);
+
+const directionalLight = new THREE.DirectionalLight(0x00ffcc, 0.5);
+directionalLight.position.set(1, 1, 0);
+scene.add(directionalLight);
+
+const directionalLightHelper = new THREE.DirectionalLightHelper(
+  directionalLight,
+  0.2
 );
-const metalnessTexture = textureLoader.load("/textures/door/metalness.jpg");
-const roughnessTexture = textureLoader.load("/textures/door/roughness.jpg");
 
-const matcapTexture = textureLoader.load("/textures/matcaps/1.png");
-const gradientTexture = textureLoader.load("/textures/gradients/3.jpg");
-gradientTexture.magFilter = THREE.NearestFilter;
-gradientTexture.minFilter = THREE.NearestFilter;
+scene.add(directionalLightHelper);
 
-// const material = new THREE.MeshBasicMaterial();
-// material.map = colorTexture;
-// material.alphaMap = alphaTexture;
-// material.transparent = true;
+const hemisphereLight = new THREE.HemisphereLight("red", "blue", 0.3);
+scene.add(hemisphereLight);
 
-// const material = new THREE.MeshNormalMaterial();
+const hemisphereLightHelper = new THREE.HemisphereLightHelper(
+  hemisphereLight,
+  0.3
+);
 
-// const material = new THREE.MeshMatcapMaterial();
-// material.matcap = matcapTexture
+scene.add(hemisphereLightHelper);
 
-// const material = new THREE.MeshToonMaterial();
-// material.gradientMap = gradientTexture;
+const pointerLight = new THREE.PointLight(0xff9000, 0.5);
+pointerLight.position.set(1, -0.5, 1.5);
 
+scene.add(pointerLight);
+
+const pointLightHelper = new THREE.PointLightHelper(pointerLight, 0.2);
+
+scene.add(pointLightHelper);
+
+gui.add(ambientLight, "intensity").min(0).max(1).step(0.01);
+
+const axeHelper = new THREE.AxesHelper();
+
+scene.add(axeHelper);
+/**
+ * Objects
+ */
+// Material
 const material = new THREE.MeshStandardMaterial();
-// material.roughness = 0.45;
-// material.metalness = 0.65;
-material.map = colorTexture;
-material.aoMap = ambientOcclusionTexture;
-material.metalnessMap = metalnessTexture;
-material.roughnessMap = metalnessTexture;
-// material.aoMapIntensity = 10;
-material.displacementScale = 0.1;
-material.normalMap = normalTexture;
-material.alphaMap = alphaTexture;
-material.transparent = true;
-/**
- * objects
- */
+material.roughness = 0.4;
 
-const plane = new THREE.Mesh(
-  new THREE.PlaneBufferGeometry(1, 1, 100, 100),
-  material
-);
+// Objects
+const plane = new THREE.Mesh(new THREE.PlaneGeometry(5, 5), material);
+plane.rotation.x = -Math.PI * 0.5;
+// plane.rotation.x = -Math.PI * 0.5;
+plane.position.y = -0.65;
 
-plane.geometry.setAttribute(
-  "uv2",
-  new THREE.BufferAttribute(plane.geometry.attributes.uv.array, 2)
-);
+const sphere = new THREE.Mesh(new THREE.SphereGeometry(0.5, 32, 32), material);
+sphere.position.x = -1.5;
 
-const sphere = new THREE.Mesh(
-  new THREE.SphereBufferGeometry(0.5, 16, 16),
-  material
-);
-
-sphere.position.x = 2;
+const cube = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.75, 0.75), material);
 
 const torus = new THREE.Mesh(
-  new THREE.TorusBufferGeometry(0.3, 0.2, 16, 32),
+  new THREE.TorusGeometry(0.3, 0.2, 32, 64),
   material
 );
+torus.position.x = 1.5;
 
-torus.position.x = -1.5;
-
-scene.add(plane, sphere, torus);
-
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
-
-const pointLight = new THREE.PointLight(0xffffff, 0.5);
-pointLight.position.x = 2;
-pointLight.position.y = 3;
-pointLight.position.z = 4;
-
-scene.add(pointLight);
-
-scene.add(ambientLight);
+scene.add(sphere, cube, torus, plane);
 
 /**
  * Sizes
@@ -124,43 +91,6 @@ const sizes = {
   height: window.innerHeight,
 };
 
-/**
- * Camera
- */
-// Base camera
-const camera = new THREE.PerspectiveCamera(
-  75,
-  sizes.width / sizes.height,
-  0.1,
-  100
-);
-
-camera.position.set(0, 0, 3);
-scene.add(camera);
-
-// const cameraHelper = new THREE.CameraHelper();
-
-// scene.add(cameraHelper);
-
-// Controls
-const controls = new OrbitControls(camera, canvas);
-controls.enableDamping = true;
-
-/**
- * Renderer
- */
-const renderer = new THREE.WebGLRenderer({
-  canvas: canvas,
-});
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-renderer.setSize(sizes.width, sizes.height);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-
-/**
- * Animate
- */
-const clock = new THREE.Clock();
 window.addEventListener("resize", () => {
   // Update sizes
   sizes.width = window.innerWidth;
@@ -175,11 +105,50 @@ window.addEventListener("resize", () => {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 });
 
+/**
+ * Camera
+ */
+// Base camera
+const camera = new THREE.PerspectiveCamera(
+  75,
+  sizes.width / sizes.height,
+  0.1,
+  100
+);
+camera.position.x = 1;
+camera.position.y = 1;
+camera.position.z = 2;
+scene.add(camera);
+
+// Controls
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true;
+
+/**
+ * Renderer
+ */
+const renderer = new THREE.WebGLRenderer({
+  canvas: canvas,
+});
+renderer.setSize(sizes.width, sizes.height);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+/**
+ * Animate
+ */
+const clock = new THREE.Clock();
+
 const tick = () => {
   const elapsedTime = clock.getElapsedTime();
 
-  sphere.rotation.x = 0.3 * elapsedTime;
-  sphere.rotation.y = 0.3 * elapsedTime;
+  // Update objects
+  sphere.rotation.y = 0.1 * elapsedTime;
+  cube.rotation.y = 0.1 * elapsedTime;
+  torus.rotation.y = 0.1 * elapsedTime;
+
+  sphere.rotation.x = 0.15 * elapsedTime;
+  cube.rotation.x = 0.15 * elapsedTime;
+  torus.rotation.x = 0.15 * elapsedTime;
 
   // Update controls
   controls.update();
