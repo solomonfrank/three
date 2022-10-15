@@ -4,6 +4,17 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import * as dat from "dat.gui";
 
 /**
+ *  Texture
+ */
+
+const textureLoader = new THREE.TextureLoader();
+
+const bakedShadow = textureLoader.load("/textures/bakedShadow.jpg");
+const simpleShadow = textureLoader.load("/textures/simpleShadow.jpg");
+
+// Only Pointer light, directional and spot light support light
+
+/**
  * Base
  */
 // Debug
@@ -18,70 +29,108 @@ const scene = new THREE.Scene();
 /**
  * Lights
  */
+// Ambient light
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+gui.add(ambientLight, "intensity").min(0).max(1).step(0.001);
+scene.add(ambientLight);
 
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-// scene.add(ambientLight);
+// Directional light
+const directionalLight = new THREE.DirectionalLight(0xffffff, 0.4);
+directionalLight.position.set(2, 2, -1);
+directionalLight.castShadow = true;
 
-const directionalLight = new THREE.DirectionalLight(0x00ffcc, 0.5);
-directionalLight.position.set(1, 1, 0);
+directionalLight.shadow.mapSize.width = 1024;
+directionalLight.shadow.mapSize.height = 1024;
+directionalLight.shadow.camera.top = 2;
+directionalLight.shadow.camera.right = 2;
+directionalLight.shadow.camera.bottom = -2;
+directionalLight.shadow.camera.left = -2;
+directionalLight.shadow.camera.far = 6;
+directionalLight.shadow.radius = 10;
+
+gui.add(directionalLight, "intensity").min(0).max(1).step(0.001);
+gui.add(directionalLight.position, "x").min(-5).max(5).step(0.001);
+gui.add(directionalLight.position, "y").min(-5).max(5).step(0.001);
+gui.add(directionalLight.position, "z").min(-5).max(5).step(0.001);
 scene.add(directionalLight);
 
-const directionalLightHelper = new THREE.DirectionalLightHelper(
-  directionalLight,
-  0.2
+const spotLight = new THREE.SpotLight(0xffffff, 0.4, 10, Math.PI * 0.3);
+spotLight.castShadow = true;
+
+spotLight.shadow.mapSize.width = 1024;
+spotLight.shadow.mapSize.height = 1024;
+spotLight.shadow.camera.fov = 30;
+spotLight.shadow.camera.near = 1;
+spotLight.shadow.camera.far = 6;
+spotLight.position.set(0, 2, 2);
+scene.add(spotLight);
+scene.add(spotLight.target);
+
+// const axesHelper = new THREE.AxesHelper();
+// scene.add(axesHelper);
+
+/**
+ *  Light Helpers
+ */
+
+// const directionalLightHelper = new THREE.DirectionalLightHelper(
+//   directionalLight,
+//   0.2
+// );
+
+// scene.add(directionalLightHelper);
+
+// const spotLightHelper = new THREE.SpotLightHelper(spotLight, 0.2);
+// scene.add(spotLightHelper);
+
+/**
+ * camera helper
+ */
+
+const directionalCameraHelper = new THREE.CameraHelper(
+  directionalLight.shadow.camera
 );
+directionalCameraHelper.visible = false;
+scene.add(directionalCameraHelper);
 
-scene.add(directionalLightHelper);
+const spotlightCameraHelper = new THREE.CameraHelper(spotLight.shadow.camera);
+scene.add(spotlightCameraHelper);
+spotlightCameraHelper.visible = false;
 
-const hemisphereLight = new THREE.HemisphereLight("red", "blue", 0.3);
-scene.add(hemisphereLight);
+/**
+ * Materials
+ */
+const material = new THREE.MeshStandardMaterial();
+material.roughness = 0.7;
+gui.add(material, "metalness").min(0).max(1).step(0.001);
+gui.add(material, "roughness").min(0).max(1).step(0.001);
 
-const hemisphereLightHelper = new THREE.HemisphereLightHelper(
-  hemisphereLight,
-  0.3
-);
-
-scene.add(hemisphereLightHelper);
-
-const pointerLight = new THREE.PointLight(0xff9000, 0.5);
-pointerLight.position.set(1, -0.5, 1.5);
-
-scene.add(pointerLight);
-
-const pointLightHelper = new THREE.PointLightHelper(pointerLight, 0.2);
-
-scene.add(pointLightHelper);
-
-gui.add(ambientLight, "intensity").min(0).max(1).step(0.01);
-
-const axeHelper = new THREE.AxesHelper();
-
-scene.add(axeHelper);
 /**
  * Objects
  */
-// Material
-const material = new THREE.MeshStandardMaterial();
-material.roughness = 0.4;
-
-// Objects
-const plane = new THREE.Mesh(new THREE.PlaneGeometry(5, 5), material);
-plane.rotation.x = -Math.PI * 0.5;
-// plane.rotation.x = -Math.PI * 0.5;
-plane.position.y = -0.65;
-
 const sphere = new THREE.Mesh(new THREE.SphereGeometry(0.5, 32, 32), material);
-sphere.position.x = -1.5;
+sphere.castShadow = true;
 
-const cube = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.75, 0.75), material);
+const plane = new THREE.Mesh(new THREE.PlaneGeometry(5, 5), material);
+plane.receiveShadow = true;
+plane.rotation.x = -Math.PI * 0.5;
+plane.position.y = -0.5;
 
-const torus = new THREE.Mesh(
-  new THREE.TorusGeometry(0.3, 0.2, 32, 64),
-  material
+scene.add(sphere, plane);
+
+const spherePlane = new THREE.Mesh(
+  new THREE.PlaneGeometry(1.5, 1.5),
+  new THREE.MeshBasicMaterial({
+    color: 0x000000,
+    transparent: true,
+    alphaMap: simpleShadow,
+  })
 );
-torus.position.x = 1.5;
 
-scene.add(sphere, cube, torus, plane);
+spherePlane.rotation.x = -Math.PI * 0.5;
+spherePlane.position.y = plane.position.y + 0.01;
+
+scene.add(spherePlane);
 
 /**
  * Sizes
@@ -132,6 +181,8 @@ const renderer = new THREE.WebGLRenderer({
 });
 renderer.setSize(sizes.width, sizes.height);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = false; // realtime shadow disabled
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
 /**
  * Animate
@@ -141,14 +192,14 @@ const clock = new THREE.Clock();
 const tick = () => {
   const elapsedTime = clock.getElapsedTime();
 
-  // Update objects
-  sphere.rotation.y = 0.1 * elapsedTime;
-  cube.rotation.y = 0.1 * elapsedTime;
-  torus.rotation.y = 0.1 * elapsedTime;
+  sphere.position.x = Math.cos(elapsedTime) * 1.5;
+  sphere.position.z = Math.sin(elapsedTime) * 1.5;
 
-  sphere.rotation.x = 0.15 * elapsedTime;
-  cube.rotation.x = 0.15 * elapsedTime;
-  torus.rotation.x = 0.15 * elapsedTime;
+  sphere.position.y = Math.abs(Math.sin(elapsedTime * 3));
+
+  spherePlane.position.x = sphere.position.x;
+  spherePlane.position.z = sphere.position.z;
+  spherePlane.material.opacity = (1 - sphere.position.y) * 0.3;
 
   // Update controls
   controls.update();
