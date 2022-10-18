@@ -2,6 +2,7 @@ import "./style.css";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import * as dat from "dat.gui";
+import { BufferAttribute, BufferGeometry, Points } from "three";
 
 /**
  * Base
@@ -16,54 +17,81 @@ const canvas = document.querySelector("canvas.webgl");
 const scene = new THREE.Scene();
 
 /**
- * Textures
+ * generate galaxy
  */
-const textureLoader = new THREE.TextureLoader();
-const particleTexture = textureLoader.load("/textures/particles/2.png");
 
-/**
- * Particles
- */
-// const pointGeometry = new THREE.SphereGeometry(1, 32, 32);
-// const pointMaterial = new THREE.PointsMaterial({
-//   size: 0.02,
-//   sizeAttenuation: true,
-// });
-// const point = new THREE.Points(pointGeometry, pointMaterial);
+let points = null;
+let geometry = null;
+let material = null;
 
-// scene.add(point);
+const galaxyParameter = {};
+galaxyParameter.count = 1000;
+galaxyParameter.size = 0.02;
+galaxyParameter.radius = 5;
+galaxyParameter.branch = 3;
 
-//custom particle
+const generateGalaxy = () => {
+  if (points !== null) {
+    geometry.dispose();
+    material.dispose();
+    scene.remove(points);
+  }
+  geometry = new BufferGeometry();
+  material = new THREE.PointsMaterial({
+    size: galaxyParameter.size,
+    sizeAttenuation: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+  });
+  const positions = new Float32Array(galaxyParameter.count * 3);
 
-const pointMaterial = new THREE.PointsMaterial({
-  size: 0.1,
-  sizeAttenuation: true,
-  color: "#ff88cc",
-  alphaMap: particleTexture,
-  transparent: true,
-  // alphaTest: 0.001,
-  // depthTest: false,
-  depthWrite: false,
-  vertexColors: true,
-});
+  for (let i = 0; i < galaxyParameter.count; i++) {
+    const i3 = i * 3;
 
-const particleGeometry = new THREE.BufferGeometry();
-const count = 3000;
-const positions = new Float32Array(count * 3);
-const colors = new Float32Array(count * 3);
+    const radius = Math.random() * galaxyParameter.radius;
+    const angle =
+      ((i % galaxyParameter.branch) / galaxyParameter.branch) * Math.PI * 2;
+    positions[i3 + 0] = radius * Math.cos(angle);
+    positions[i3 + 1] = 0;
+    positions[i3 + 1] = radius * Math.sin(angle);
+    // positions[i3 + 0] = (Math.random() - 0.5) * 3;
+    // positions[i3 + 1] = (Math.random() - 0.5) * 3;
+    // positions[i3 + 2] = (Math.random() - 0.5) * 3;
+  }
 
-for (let i = 0; i < count * 3; i++) {
-  positions[i] = (Math.random() - 0.5) * 10;
-  colors[i] = Math.random();
-}
+  geometry.setAttribute("position", new BufferAttribute(positions, 3));
+  points = new THREE.Points(geometry, material);
 
-particleGeometry.setAttribute(
-  "position",
-  new THREE.BufferAttribute(positions, 3)
-);
-particleGeometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-const particles = new THREE.Points(particleGeometry, pointMaterial);
-scene.add(particles);
+  scene.add(points);
+};
+
+gui
+  .add(galaxyParameter, "count")
+  .min(100)
+  .step(500)
+  .max(10000)
+  .onFinishChange(generateGalaxy);
+gui
+  .add(galaxyParameter, "size")
+  .min(0.01)
+  .step(0.005)
+  .max(0.5)
+  .onFinishChange(generateGalaxy);
+gui
+  .add(galaxyParameter, "radius")
+  .min(5)
+  .step(2)
+  .max(20)
+  .onFinishChange(generateGalaxy);
+gui
+  .add(galaxyParameter, "branch")
+  .min(2)
+  .step(1)
+  .max(5)
+  .onFinishChange(generateGalaxy);
+
+generateGalaxy();
+
 /**
  * Sizes
  */
@@ -96,6 +124,8 @@ const camera = new THREE.PerspectiveCamera(
   0.1,
   100
 );
+camera.position.x = 3;
+camera.position.y = 3;
 camera.position.z = 3;
 scene.add(camera);
 
@@ -119,21 +149,11 @@ const clock = new THREE.Clock();
 
 const tick = () => {
   const elapsedTime = clock.getElapsedTime();
-  //particles.rotation.y = elapsedTime * 0.5;
+
   // Update controls
-
-  for (let i = 0; i < count; i++) {
-    const i3 = i * 3;
-    const x = particleGeometry.attributes.position.array[i3];
-    particleGeometry.attributes.position.array[i3 + 1] = Math.sin(
-      elapsedTime + x
-    );
-  }
-
   controls.update();
 
   // Render
-  particleGeometry.attributes.position.needsUpdate = true;
   renderer.render(scene, camera);
 
   // Call tick again on the next frame
