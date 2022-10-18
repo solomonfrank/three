@@ -16,54 +16,36 @@ const canvas = document.querySelector("canvas.webgl");
 const scene = new THREE.Scene();
 
 /**
- * Textures
+ * Objects
  */
-const textureLoader = new THREE.TextureLoader();
-const particleTexture = textureLoader.load("/textures/particles/2.png");
-
-/**
- * Particles
- */
-// const pointGeometry = new THREE.SphereGeometry(1, 32, 32);
-// const pointMaterial = new THREE.PointsMaterial({
-//   size: 0.02,
-//   sizeAttenuation: true,
-// });
-// const point = new THREE.Points(pointGeometry, pointMaterial);
-
-// scene.add(point);
-
-//custom particle
-
-const pointMaterial = new THREE.PointsMaterial({
-  size: 0.1,
-  sizeAttenuation: true,
-  color: "#ff88cc",
-  alphaMap: particleTexture,
-  transparent: true,
-  // alphaTest: 0.001,
-  // depthTest: false,
-  depthWrite: false,
-  vertexColors: true,
-});
-
-const particleGeometry = new THREE.BufferGeometry();
-const count = 3000;
-const positions = new Float32Array(count * 3);
-const colors = new Float32Array(count * 3);
-
-for (let i = 0; i < count * 3; i++) {
-  positions[i] = (Math.random() - 0.5) * 10;
-  colors[i] = Math.random();
-}
-
-particleGeometry.setAttribute(
-  "position",
-  new THREE.BufferAttribute(positions, 3)
+const object1 = new THREE.Mesh(
+  new THREE.SphereGeometry(0.5, 16, 16),
+  new THREE.MeshBasicMaterial({ color: "#ff0000" })
 );
-particleGeometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-const particles = new THREE.Points(particleGeometry, pointMaterial);
-scene.add(particles);
+object1.position.x = -2;
+
+const object2 = new THREE.Mesh(
+  new THREE.SphereGeometry(0.5, 16, 16),
+  new THREE.MeshBasicMaterial({ color: "#ff0000" })
+);
+
+const object3 = new THREE.Mesh(
+  new THREE.SphereGeometry(0.5, 16, 16),
+  new THREE.MeshBasicMaterial({ color: "#ff0000" })
+);
+object3.position.x = 2;
+
+scene.add(object1, object2, object3);
+
+const rayCaster = new THREE.Raycaster();
+// const rayOrigin = new THREE.Vector3(-3, 0, 0)
+// const rayDirection = new THREE.Vector3(10, 0,0)
+// rayDirection.normalize()
+
+// rayCaster.set(rayOrigin,rayDirection)
+
+// rayCaster.intersectObjects([object1, object2, object3]) // for non animate obj
+
 /**
  * Sizes
  */
@@ -71,6 +53,15 @@ const sizes = {
   width: window.innerWidth,
   height: window.innerHeight,
 };
+
+const mouse = new THREE.Vector2();
+
+window.addEventListener("mousemove", (event) => {
+  mouse.x = (event.clientX / sizes.width) * 2 - 1;
+  mouse.y = -(event.clientY / sizes.height) * 2 + 1;
+
+  console.log(mouse);
+});
 
 window.addEventListener("resize", () => {
   // Update sizes
@@ -119,21 +110,35 @@ const clock = new THREE.Clock();
 
 const tick = () => {
   const elapsedTime = clock.getElapsedTime();
-  //particles.rotation.y = elapsedTime * 0.5;
-  // Update controls
 
-  for (let i = 0; i < count; i++) {
-    const i3 = i * 3;
-    const x = particleGeometry.attributes.position.array[i3];
-    particleGeometry.attributes.position.array[i3 + 1] = Math.sin(
-      elapsedTime + x
-    );
+  object1.position.y = Math.sin(elapsedTime * 0.3) * 1.5;
+  object2.position.y = Math.sin(elapsedTime * 0.8) * 1.5;
+  object3.position.y = Math.sin(elapsedTime * 1.4) * 1.5;
+
+  // const rayCaster = new THREE.Raycaster();
+  rayCaster.setFromCamera(mouse, camera);
+  // const rayOrigin = new THREE.Vector3(-3, 0, 0);
+  // const rayDirection = new THREE.Vector3(1, 0, 0);
+  // rayDirection.normalize();
+
+  // rayCaster.set(rayOrigin, rayDirection);
+
+  const objectToTest = [object1, object2, object3];
+
+  const intersects = rayCaster.intersectObjects(objectToTest);
+
+  for (let object of objectToTest) {
+    object.material.color.set("#0000ff");
   }
 
+  for (let intersect of intersects) {
+    intersect.object.material.color.set("#ff0000");
+  }
+
+  // Update controls
   controls.update();
 
   // Render
-  particleGeometry.attributes.position.needsUpdate = true;
   renderer.render(scene, camera);
 
   // Call tick again on the next frame
