@@ -2,7 +2,6 @@ import "./style.css";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import * as dat from "dat.gui";
-import { BufferAttribute, BufferGeometry, Points } from "three";
 
 /**
  * Base
@@ -17,80 +16,35 @@ const canvas = document.querySelector("canvas.webgl");
 const scene = new THREE.Scene();
 
 /**
- * generate galaxy
+ * Objects
  */
+const object1 = new THREE.Mesh(
+  new THREE.SphereGeometry(0.5, 16, 16),
+  new THREE.MeshBasicMaterial({ color: "#ff0000" })
+);
+object1.position.x = -2;
 
-let points = null;
-let geometry = null;
-let material = null;
+const object2 = new THREE.Mesh(
+  new THREE.SphereGeometry(0.5, 16, 16),
+  new THREE.MeshBasicMaterial({ color: "#ff0000" })
+);
 
-const galaxyParameter = {};
-galaxyParameter.count = 1000;
-galaxyParameter.size = 0.02;
-galaxyParameter.radius = 5;
-galaxyParameter.branch = 3;
+const object3 = new THREE.Mesh(
+  new THREE.SphereGeometry(0.5, 16, 16),
+  new THREE.MeshBasicMaterial({ color: "#ff0000" })
+);
+object3.position.x = 2;
 
-const generateGalaxy = () => {
-  if (points !== null) {
-    geometry.dispose();
-    material.dispose();
-    scene.remove(points);
-  }
-  geometry = new BufferGeometry();
-  material = new THREE.PointsMaterial({
-    size: galaxyParameter.size,
-    sizeAttenuation: true,
-    depthWrite: false,
-    blending: THREE.AdditiveBlending,
-  });
-  const positions = new Float32Array(galaxyParameter.count * 3);
+scene.add(object1, object2, object3);
 
-  for (let i = 0; i < galaxyParameter.count; i++) {
-    const i3 = i * 3;
+const rayCaster = new THREE.Raycaster();
+// const rayOrigin = new THREE.Vector3(-3, 0, 0)
+// const rayDirection = new THREE.Vector3(10, 0,0)
+// rayDirection.normalize()
 
-    const radius = Math.random() * galaxyParameter.radius;
-    const angle =
-      ((i % galaxyParameter.branch) / galaxyParameter.branch) * Math.PI * 2;
-    positions[i3 + 0] = radius * Math.cos(angle);
-    positions[i3 + 1] = 0;
-    positions[i3 + 1] = radius * Math.sin(angle);
-    // positions[i3 + 0] = (Math.random() - 0.5) * 3;
-    // positions[i3 + 1] = (Math.random() - 0.5) * 3;
-    // positions[i3 + 2] = (Math.random() - 0.5) * 3;
-  }
+// rayCaster.set(rayOrigin,rayDirection)
 
-  geometry.setAttribute("position", new BufferAttribute(positions, 3));
-  points = new THREE.Points(geometry, material);
-
-  scene.add(points);
-};
-
-gui
-  .add(galaxyParameter, "count")
-  .min(100)
-  .step(500)
-  .max(10000)
-  .onFinishChange(generateGalaxy);
-gui
-  .add(galaxyParameter, "size")
-  .min(0.01)
-  .step(0.005)
-  .max(0.5)
-  .onFinishChange(generateGalaxy);
-gui
-  .add(galaxyParameter, "radius")
-  .min(5)
-  .step(2)
-  .max(20)
-  .onFinishChange(generateGalaxy);
-gui
-  .add(galaxyParameter, "branch")
-  .min(2)
-  .step(1)
-  .max(5)
-  .onFinishChange(generateGalaxy);
-
-generateGalaxy();
+// rayCaster.intersectObjects([object1, object2, object3]) // for non animate obj
 
 /**
  * Sizes
@@ -99,6 +53,15 @@ const sizes = {
   width: window.innerWidth,
   height: window.innerHeight,
 };
+
+const mouse = new THREE.Vector2();
+
+window.addEventListener("mousemove", (event) => {
+  mouse.x = (event.clientX / sizes.width) * 2 - 1;
+  mouse.y = -(event.clientY / sizes.height) * 2 + 1;
+
+  console.log(mouse);
+});
 
 window.addEventListener("resize", () => {
   // Update sizes
@@ -124,8 +87,6 @@ const camera = new THREE.PerspectiveCamera(
   0.1,
   100
 );
-camera.position.x = 3;
-camera.position.y = 3;
 camera.position.z = 3;
 scene.add(camera);
 
@@ -149,6 +110,30 @@ const clock = new THREE.Clock();
 
 const tick = () => {
   const elapsedTime = clock.getElapsedTime();
+
+  object1.position.y = Math.sin(elapsedTime * 0.3) * 1.5;
+  object2.position.y = Math.sin(elapsedTime * 0.8) * 1.5;
+  object3.position.y = Math.sin(elapsedTime * 1.4) * 1.5;
+
+  // const rayCaster = new THREE.Raycaster();
+  rayCaster.setFromCamera(mouse, camera);
+  // const rayOrigin = new THREE.Vector3(-3, 0, 0);
+  // const rayDirection = new THREE.Vector3(1, 0, 0);
+  // rayDirection.normalize();
+
+  // rayCaster.set(rayOrigin, rayDirection);
+
+  const objectToTest = [object1, object2, object3];
+
+  const intersects = rayCaster.intersectObjects(objectToTest);
+
+  for (let object of objectToTest) {
+    object.material.color.set("#0000ff");
+  }
+
+  for (let intersect of intersects) {
+    intersect.object.material.color.set("#ff0000");
+  }
 
   // Update controls
   controls.update();
