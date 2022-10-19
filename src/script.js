@@ -30,6 +30,7 @@ const scene = new THREE.Scene();
 
 const textureLoader = new THREE.TextureLoader();
 const gradientTexture = textureLoader.load("/textures/gradients/3.jpg");
+gradientTexture.magFilter = THREE.NearestFilter;
 const darkTexture = textureLoader.load("/textures/gradients/5.jpg");
 
 /**
@@ -43,17 +44,11 @@ const material = new THREE.MeshToonMaterial({
 
 const objectDistance = 4;
 
-const mesh1 = new THREE.Mesh(
-  new THREE.TorusBufferGeometry(0.5, 0.6, 16, 69),
-  material
-);
+const mesh1 = new THREE.Mesh(new THREE.TorusGeometry(1, 0.4, 16, 60), material);
 
-const mesh2 = new THREE.Mesh(
-  new THREE.ConeBufferGeometry(0.5, 1, 32),
-  material
-);
+const mesh2 = new THREE.Mesh(new THREE.ConeGeometry(1, 2, 32), material);
 const mesh3 = new THREE.Mesh(
-  new THREE.TorusKnotBufferGeometry(0.8, 0.35, 100, 16),
+  new THREE.TorusKnotGeometry(0.8, 0.35, 100, 16),
   material
 );
 
@@ -138,6 +133,7 @@ const camera = new THREE.PerspectiveCamera(
   0.1,
   100
 );
+
 camera.position.z = 6;
 cameraGroup.add(camera);
 
@@ -200,8 +196,8 @@ const tick = () => {
   mesh2.position.x = -2;
   mesh3.position.x = 2;
 
-  const parallaxX = cursor.x;
-  const parallaxY = -cursor.y;
+  const parallaxX = cursor.x * 0.5;
+  const parallaxY = -cursor.y * 0.5;
   cameraGroup.position.x +=
     (parallaxX - cameraGroup.position.x) * 5 * deltaTime; // we are multipying by deltaTime to maintaine uniformity on both higher frame per sec device
   cameraGroup.position.y +=
