@@ -1,6 +1,8 @@
 import "./style.css";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
+import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader";
 import * as dat from "dat.gui";
 
 /**
@@ -14,6 +16,23 @@ const canvas = document.querySelector("canvas.webgl");
 
 // Scene
 const scene = new THREE.Scene();
+
+// model
+
+// const dracoLoader = new DRACOLoader();
+const gltfLoader = new GLTFLoader();
+// gltfLoader.setDRACOLoader(dracoLoader);
+gltfLoader.load("/models/Fox/glTF/Fox.gltf", (gltf) => {
+  console.log("Loaded", gltf);
+  gltf.scene.scale.set(0.025, 0.025, 0.025);
+  scene.add(gltf.scene);
+
+  // const children = [...gltf.scene.children];
+
+  // for (let child of children) {
+  //   scene.add(child);
+  // }
+});
 
 /**
  * Textures
@@ -109,6 +128,8 @@ controls.enableDamping = true;
 const renderer = new THREE.WebGLRenderer({
   canvas: canvas,
 });
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.setSize(sizes.width, sizes.height);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
