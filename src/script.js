@@ -1,15 +1,59 @@
 import "./style.css";
 import * as THREE from "three";
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
-import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader";
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import * as dat from "dat.gui";
+
+/**
+ * Loaders
+ */
+const gltfLoader = new GLTFLoader();
+const cubeLoaderTexture = new THREE.CubeTextureLoader();
+
+/**
+ * update all the material
+ */
+const updateAllMaterial = () => {
+  scene.traverse((child) => {
+    if (
+      child instanceof THREE.Mesh &&
+      child.material instanceof THREE.MeshStandardMaterial
+    ) {
+      // child.material.envMap = environmentMaps; // if you controll the env map
+      child.material.envMapIntensity = debugObj.envMapIntensity;
+      child.material.needsUpdate = true;
+      child.castShadow = true;
+      child.receiveShadow = true;
+    }
+  });
+};
+
+gltfLoader.load(
+  "/models/hamburger.glb",
+  (gltf) => {
+    console.log("loaded");
+    gltf.scene.scale.set(0.3, 0.3, 0.3);
+    gltf.scene.position.set(0, -1, 0);
+    gltf.scene.rotation.y = Math.PI * 0.5;
+    scene.add(gltf.scene);
+
+    gui
+      .add(gltf.scene.rotation, "y")
+      .min(-Math.PI)
+      .max(Math.PI)
+      .step(0.001)
+      .name("rotation");
+    updateAllMaterial();
+  },
+  () => {}
+);
 
 /**
  * Base
  */
 // Debug
 const gui = new dat.GUI();
+const debugObj = {};
 
 // Canvas
 const canvas = document.querySelector("canvas.webgl");
@@ -17,72 +61,78 @@ const canvas = document.querySelector("canvas.webgl");
 // Scene
 const scene = new THREE.Scene();
 
-// model
+/**
+ * environment map
+ */
+const environmentMaps = cubeLoaderTexture.load([
+  "/textures/environmentMaps/0/px.jpg",
+  "/textures/environmentMaps/0/nx.jpg",
+  "/textures/environmentMaps/0/py.jpg",
+  "/textures/environmentMaps/0/ny.jpg",
+  "/textures/environmentMaps/0/pz.jpg",
+  "/textures/environmentMaps/0/nz.jpg",
+]);
+environmentMaps.encoding = THREE.sRGBEncoding;
 
-// const dracoLoader = new DRACOLoader();
-const gltfLoader = new GLTFLoader();
-// gltfLoader.setDRACOLoader(dracoLoader);
-gltfLoader.load("/models/Fox/glTF/Fox.gltf", (gltf) => {
-  console.log("Loaded", gltf);
-  gltf.scene.scale.set(0.025, 0.025, 0.025);
-  scene.add(gltf.scene);
-
-  // const children = [...gltf.scene.children];
-
-  // for (let child of children) {
-  //   scene.add(child);
-  // }
-});
+scene.background = environmentMaps;
+scene.environment = environmentMaps;
+debugObj.envMapIntensity = 5;
+gui
+  .add(debugObj, "envMapIntensity")
+  .min(0)
+  .max(10)
+  .step(0.01)
+  .onChange(updateAllMaterial);
 
 /**
- * Textures
+ * Light
  */
-const textureLoader = new THREE.TextureLoader();
-const particleTexture = textureLoader.load("/textures/particles/2.png");
 
-/**
- * Particles
- */
-// const pointGeometry = new THREE.SphereGeometry(1, 32, 32);
-// const pointMaterial = new THREE.PointsMaterial({
-//   size: 0.02,
-//   sizeAttenuation: true,
-// });
-// const point = new THREE.Points(pointGeometry, pointMaterial);
+const directionalLight = new THREE.DirectionalLight("#ffffff", 5);
+directionalLight.position.set(0.25, 3, -2.25);
+directionalLight.castShadow = true;
+directionalLight.shadow.camera.far = 15;
+directionalLight.shadow.mapSize.set(1024, 1024);
+directionalLight.shadow.normalBias = 0.05;
 
-// scene.add(point);
+gui
+  .add(directionalLight, "intensity")
+  .min(0)
+  .max(10)
+  .step(0.001)
+  .name("lightIntensity");
+gui
+  .add(directionalLight.position, "x")
+  .min(-5)
+  .max(5)
+  .step(0.001)
+  .name("lightX");
+gui
+  .add(directionalLight.position, "y")
+  .min(-5)
+  .max(5)
+  .step(0.001)
+  .name("lightY");
+gui
+  .add(directionalLight.position, "z")
+  .min(-5)
+  .max(5)
+  .step(0.001)
+  .name("lightZ");
 
-//custom particle
-
-const pointMaterial = new THREE.PointsMaterial({
-  size: 0.1,
-  sizeAttenuation: true,
-  color: "#ff88cc",
-  alphaMap: particleTexture,
-  transparent: true,
-  // alphaTest: 0.001,
-  // depthTest: false,
-  depthWrite: false,
-  vertexColors: true,
-});
-
-const particleGeometry = new THREE.BufferGeometry();
-const count = 3000;
-const positions = new Float32Array(count * 3);
-const colors = new Float32Array(count * 3);
-
-for (let i = 0; i < count * 3; i++) {
-  positions[i] = (Math.random() - 0.5) * 10;
-  colors[i] = Math.random();
-}
-
-particleGeometry.setAttribute(
-  "position",
-  new THREE.BufferAttribute(positions, 3)
+scene.add(directionalLight);
+// const directionalLightHelper = new THREE.DirectionalLightHelper(
+//   directionalLight,
+//   0.1
+// );
+const directionalLightCamera = new THREE.CameraHelper(
+  directionalLight.shadow.camera
 );
-particleGeometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-const particles = new THREE.Points(particleGeometry, pointMaterial);
-scene.add(particles);
+
+scene.add(directionalLightCamera);
+
+// scene.add(directionalLightHelper);
+
 /**
  * Sizes
  */
@@ -115,7 +165,7 @@ const camera = new THREE.PerspectiveCamera(
   0.1,
   100
 );
-camera.position.z = 3;
+camera.position.set(4, 1, -4);
 scene.add(camera);
 
 // Controls
@@ -127,34 +177,39 @@ controls.enableDamping = true;
  */
 const renderer = new THREE.WebGLRenderer({
   canvas: canvas,
+  antialias: true,
 });
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.setSize(sizes.width, sizes.height);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.physicallyCorrectLights = true;
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.toneMapping = THREE.ReinhardToneMapping;
+renderer.toneMappingExposure = 3;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+gui
+  .add(renderer, "toneMapping", {
+    No: THREE.NoToneMapping,
+    Linear: THREE.LinearToneMapping,
+    Reinhard: THREE.ReinhardToneMapping,
+    Cineon: THREE.CineonToneMapping,
+    ACESFilmic: THREE.ACESFilmicToneMapping,
+  })
+  .onFinishChange(() => {
+    renderer.toneMapping = Number(renderer.toneMapping);
+    updateAllMaterial();
+  });
+gui.add(renderer, "toneMappingExposure").min(0).max(10).step(0.01);
 
 /**
  * Animate
  */
-const clock = new THREE.Clock();
-
 const tick = () => {
-  const elapsedTime = clock.getElapsedTime();
-  //particles.rotation.y = elapsedTime * 0.5;
   // Update controls
-
-  for (let i = 0; i < count; i++) {
-    const i3 = i * 3;
-    const x = particleGeometry.attributes.position.array[i3];
-    particleGeometry.attributes.position.array[i3 + 1] = Math.sin(
-      elapsedTime + x
-    );
-  }
-
   controls.update();
 
   // Render
-  particleGeometry.attributes.position.needsUpdate = true;
   renderer.render(scene, camera);
 
   // Call tick again on the next frame
