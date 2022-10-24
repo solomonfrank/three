@@ -1,8 +1,8 @@
 import "./style.css";
 import * as THREE from "three";
+import fragmentShader from "./shaders/test/fragment.glsl";
+import vertexShaders from "./shaders/test/vertex.glsl";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
-import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader";
 import * as dat from "dat.gui";
 
 /**
@@ -17,72 +17,67 @@ const canvas = document.querySelector("canvas.webgl");
 // Scene
 const scene = new THREE.Scene();
 
-// model
-
-// const dracoLoader = new DRACOLoader();
-const gltfLoader = new GLTFLoader();
-// gltfLoader.setDRACOLoader(dracoLoader);
-gltfLoader.load("/models/Fox/glTF/Fox.gltf", (gltf) => {
-  console.log("Loaded", gltf);
-  gltf.scene.scale.set(0.025, 0.025, 0.025);
-  scene.add(gltf.scene);
-
-  // const children = [...gltf.scene.children];
-
-  // for (let child of children) {
-  //   scene.add(child);
-  // }
-});
-
 /**
  * Textures
  */
 const textureLoader = new THREE.TextureLoader();
-const particleTexture = textureLoader.load("/textures/particles/2.png");
+const flagTexture = textureLoader.load("/textures/flag-french.jpg");
 
 /**
- * Particles
+ * Test mesh
  */
-// const pointGeometry = new THREE.SphereGeometry(1, 32, 32);
-// const pointMaterial = new THREE.PointsMaterial({
-//   size: 0.02,
-//   sizeAttenuation: true,
-// });
-// const point = new THREE.Points(pointGeometry, pointMaterial);
+// Geometry
+const geometry = new THREE.PlaneGeometry(1, 1, 32, 32);
 
-// scene.add(point);
-
-//custom particle
-
-const pointMaterial = new THREE.PointsMaterial({
-  size: 0.1,
-  sizeAttenuation: true,
-  color: "#ff88cc",
-  alphaMap: particleTexture,
-  transparent: true,
-  // alphaTest: 0.001,
-  // depthTest: false,
-  depthWrite: false,
-  vertexColors: true,
-});
-
-const particleGeometry = new THREE.BufferGeometry();
-const count = 3000;
-const positions = new Float32Array(count * 3);
-const colors = new Float32Array(count * 3);
-
-for (let i = 0; i < count * 3; i++) {
-  positions[i] = (Math.random() - 0.5) * 10;
-  colors[i] = Math.random();
+console.log(geometry);
+const count = geometry.attributes.position.count;
+const position = new Float32Array(count);
+for (let i = 0; i < count; i++) {
+  position[i] = Math.random();
 }
 
-particleGeometry.setAttribute(
-  "position",
-  new THREE.BufferAttribute(positions, 3)
-);
-particleGeometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-const particles = new THREE.Points(particleGeometry, pointMaterial);
-scene.add(particles);
+geometry.setAttribute("aRandom", new THREE.BufferAttribute(position, 1));
+
+// Material
+// const material = new THREE.MeshBasicMaterial();
+const material = new THREE.RawShaderMaterial({
+  vertexShader: vertexShaders,
+  fragmentShader: fragmentShader,
+  uniforms: {
+    uFrequency: {
+      value: new THREE.Vector2(10, 5),
+    },
+    uTime: {
+      value: 0,
+    },
+    uColor: {
+      value: new THREE.Color("orange"),
+    },
+    uTexture: {
+      value: flagTexture,
+    },
+  },
+
+  // wireframe: true,
+});
+
+gui
+  .add(material.uniforms.uFrequency.value, "x")
+  .min(0)
+  .max(20)
+  .step(1)
+  .name("UfrequencyX");
+gui
+  .add(material.uniforms.uFrequency.value, "y")
+  .min(0)
+  .max(20)
+  .step(1)
+  .name("UfrequencyY");
+
+// Mesh
+const mesh = new THREE.Mesh(geometry, material);
+scene.add(mesh);
+
 /**
  * Sizes
  */
@@ -115,7 +110,7 @@ const camera = new THREE.PerspectiveCamera(
   0.1,
   100
 );
-camera.position.z = 3;
+camera.position.set(0.25, -0.25, 1);
 scene.add(camera);
 
 // Controls
@@ -128,8 +123,6 @@ controls.enableDamping = true;
 const renderer = new THREE.WebGLRenderer({
   canvas: canvas,
 });
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.setSize(sizes.width, sizes.height);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
@@ -140,25 +133,16 @@ const clock = new THREE.Clock();
 
 const tick = () => {
   const elapsedTime = clock.getElapsedTime();
-  //particles.rotation.y = elapsedTime * 0.5;
+  material.uniforms.uTime.value = elapsedTime;
+
   // Update controls
-
-  for (let i = 0; i < count; i++) {
-    const i3 = i * 3;
-    const x = particleGeometry.attributes.position.array[i3];
-    particleGeometry.attributes.position.array[i3 + 1] = Math.sin(
-      elapsedTime + x
-    );
-  }
-
   controls.update();
 
   // Render
-  particleGeometry.attributes.position.needsUpdate = true;
   renderer.render(scene, camera);
 
   // Call tick again on the next frame
   window.requestAnimationFrame(tick);
 };
 
-tick();
+// tick();
