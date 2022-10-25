@@ -1,15 +1,18 @@
 import "./style.css";
 import * as THREE from "three";
-import fragmentShader from "./shaders/test/fragment.glsl";
-import vertexShaders from "./shaders/test/vertex.glsl";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import * as dat from "dat.gui";
+import vertexShader from "./shaders/water/vertex.glsl";
+import fragmentShader from "./shaders/water/fragment.glsl";
 
 /**
  * Base
  */
 // Debug
-const gui = new dat.GUI();
+const gui = new dat.GUI({ width: 340 });
+const debugObj = {};
+debugObj.depthColor = "#0000ff";
+debugObj.surfaceDepth = "#8888ff";
 
 // Canvas
 const canvas = document.querySelector("canvas.webgl");
@@ -18,65 +21,90 @@ const canvas = document.querySelector("canvas.webgl");
 const scene = new THREE.Scene();
 
 /**
- * Textures
- */
-const textureLoader = new THREE.TextureLoader();
-const flagTexture = textureLoader.load("/textures/flag-french.jpg");
-
-/**
- * Test mesh
+ * Water
  */
 // Geometry
-const geometry = new THREE.PlaneGeometry(1, 1, 32, 32);
-
-console.log(geometry);
-const count = geometry.attributes.position.count;
-const position = new Float32Array(count);
-for (let i = 0; i < count; i++) {
-  position[i] = Math.random();
-}
-
-geometry.setAttribute("aRandom", new THREE.BufferAttribute(position, 1));
+const waterGeometry = new THREE.PlaneGeometry(2, 2, 512, 512);
 
 // Material
-// const material = new THREE.MeshBasicMaterial();
-const material = new THREE.RawShaderMaterial({
-  vertexShader: vertexShaders,
+const waterMaterial = new THREE.ShaderMaterial({
+  vertexShader: vertexShader,
   fragmentShader: fragmentShader,
   uniforms: {
-    uFrequency: {
-      value: new THREE.Vector2(10, 5),
+    uBigWavesElevation: {
+      value: 0.2,
+    },
+    uBigWavesFrequecy: {
+      value: new THREE.Vector2(4, 1.5),
     },
     uTime: {
       value: 0,
     },
-    uColor: {
-      value: new THREE.Color("orange"),
+    uDepthColor: {
+      value: new THREE.Color(debugObj.depthColor),
     },
-    uTexture: {
-      value: flagTexture,
+    uSurfaceColor: {
+      value: new THREE.Color(debugObj.surfaceDepth),
+    },
+    uColorOffset: {
+      value: 0.05,
+    },
+    uColorMultiplier: {
+      value: 0.5,
     },
   },
-
-  // wireframe: true,
 });
 
-gui
-  .add(material.uniforms.uFrequency.value, "x")
-  .min(0)
-  .max(20)
-  .step(1)
-  .name("UfrequencyX");
-gui
-  .add(material.uniforms.uFrequency.value, "y")
-  .min(0)
-  .max(20)
-  .step(1)
-  .name("UfrequencyY");
-
 // Mesh
-const mesh = new THREE.Mesh(geometry, material);
-scene.add(mesh);
+const water = new THREE.Mesh(waterGeometry, waterMaterial);
+water.rotation.x = -Math.PI * 0.5;
+scene.add(water);
+
+gui
+  .add(waterMaterial.uniforms.uBigWavesElevation, "value")
+  .min(0)
+  .max(5)
+  .step(0.001)
+  .name("uBigWavesElevation");
+gui
+  .add(waterMaterial.uniforms.uBigWavesFrequecy.value, "x")
+  .min(0)
+  .max(10)
+  .step(0.001)
+  .name("uBigWavesFrequecyX");
+gui
+  .add(waterMaterial.uniforms.uBigWavesFrequecy.value, "y")
+  .min(0)
+  .max(10)
+  .step(0.001)
+  .name("uBigWavesFrequecyY");
+gui
+  .addColor(debugObj, "depthColor")
+  .name("depthColor")
+  .onChange(() => {
+    waterMaterial.uniforms.uDepthColor.value.set(debugObj.depthColor);
+    waterMaterial.uniforms.uSurfaceColor.value.set(debugObj.surfaceDepth);
+  });
+gui
+  .addColor(debugObj, "surfaceDepth")
+  .name("surfaceDepth")
+  .onChange(() => {
+    waterMaterial.uniforms.uSurfaceColor.value.set(debugObj.surfaceDepth);
+  });
+
+gui
+  .add(waterMaterial.uniforms.uColorOffset, "value")
+  .min(0)
+  .max(1)
+  .step(0.001)
+  .name("uOffsetColor");
+
+gui
+  .add(waterMaterial.uniforms.uColorMultiplier, "value")
+  .min(0)
+  .max(10)
+  .step(1)
+  .name("uColorMultiplier");
 
 /**
  * Sizes
@@ -110,7 +138,7 @@ const camera = new THREE.PerspectiveCamera(
   0.1,
   100
 );
-camera.position.set(0.25, -0.25, 1);
+camera.position.set(1, 1, 1);
 scene.add(camera);
 
 // Controls
@@ -133,7 +161,7 @@ const clock = new THREE.Clock();
 
 const tick = () => {
   const elapsedTime = clock.getElapsedTime();
-  material.uniforms.uTime.value = elapsedTime;
+  waterMaterial.uniforms.uTime.value = elapsedTime;
 
   // Update controls
   controls.update();
@@ -145,4 +173,4 @@ const tick = () => {
   window.requestAnimationFrame(tick);
 };
 
-// tick();
+tick();
