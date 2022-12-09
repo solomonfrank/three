@@ -1,18 +1,21 @@
 import "./style.css";
+import * as dat from "dat.gui";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-import * as dat from "dat.gui";
-import vertexShader from "./shaders/water/vertex.glsl";
-import fragmentShader from "./shaders/water/fragment.glsl";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
+import fireflyShaderVertex from "./shaders/firefly/vertex.glsl";
+import fireflyShaderFragment from "./shaders/firefly/fragment.glsl";
 
 /**
  * Base
  */
-// Debug
-const gui = new dat.GUI({ width: 340 });
+
 const debugObj = {};
-debugObj.depthColor = "#0000ff";
-debugObj.surfaceDepth = "#8888ff";
+// Debug
+const gui = new dat.GUI({
+  width: 400,
+});
 
 // Canvas
 const canvas = document.querySelector("canvas.webgl");
@@ -21,91 +24,111 @@ const canvas = document.querySelector("canvas.webgl");
 const scene = new THREE.Scene();
 
 /**
- * Water
+ * Loaders
  */
-// Geometry
-const waterGeometry = new THREE.PlaneGeometry(2, 2, 512, 512);
+// Texture loader
+const textureLoader = new THREE.TextureLoader();
 
-// Material
-const waterMaterial = new THREE.ShaderMaterial({
-  vertexShader: vertexShader,
-  fragmentShader: fragmentShader,
+// Draco loader
+const dracoLoader = new DRACOLoader();
+dracoLoader.setDecoderPath("draco/");
+
+// GLTF loader
+const gltfLoader = new GLTFLoader();
+gltfLoader.setDRACOLoader(dracoLoader);
+
+/**
+ *
+ * Material
+ */
+
+const bakedTexure = textureLoader.load("baked.jpg");
+bakedTexure.flipY = false;
+bakedTexure.encoding = THREE.sRGBEncoding; // color normalisation input
+
+const poleLightMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+const bakedMaterial = new THREE.MeshBasicMaterial({ map: bakedTexure });
+
+/**
+ * Load model
+ */
+gltfLoader.load(
+  "portal.glb",
+  (gltf) => {
+    gltf.scene.traverse((child) => {
+      child.material = bakedMaterial;
+    });
+
+    const poleMeshA = gltf.scene.children.find(
+      (child) => child.name === "poleLightA"
+    );
+
+    console.log("poleMeshA", poleMeshA);
+    const poleMeshB = gltf.scene.children.find(
+      (child) => child.name === "poleLightB"
+    );
+
+    const portalMesh = gltf.scene.children.find(
+      (child) => child.name === "portalLight"
+    );
+
+    poleMeshA.material = poleLightMaterial;
+    poleMeshB.material = poleLightMaterial;
+    portalMesh.material = poleLightMaterial;
+    scene.add(gltf.scene);
+  },
+  () => {}
+);
+
+/**
+ * flyfliers
+ */
+
+const particleGeomtery = new THREE.BufferGeometry();
+const flyflierCount = 30;
+const positionArr = new Float32Array(flyflierCount * 3);
+const scaleArr = new Float32Array(flyflierCount);
+
+for (let i = 0; i < positionArr.length; i++) {
+  positionArr[i * 3 + 0] = (Math.random() - 0.5) * 4;
+  positionArr[i * 3 + 1] = Math.random() * 1.5;
+  positionArr[i * 3 + 1] = (Math.random() - 0.5) * 4;
+
+  scaleArr[i] = Math.random();
+}
+particleGeomtery.setAttribute(
+  "position",
+  new THREE.BufferAttribute(positionArr, 3)
+);
+
+particleGeomtery.setAttribute("aScale", new THREE.BufferAttribute(scaleArr, 1));
+
+// const flierflyMaterial = new THREE.PointsMaterial({
+//   size: 0.1,
+//   sizeAttenuation: true,
+// });
+
+const fireflyMaterial = new THREE.ShaderMaterial({
+  vertexShader: fireflyShaderVertex,
+  fragmentShader: fireflyShaderFragment,
+  transparent: true,
+  blending: THREE.AdditiveBlending,
+  depthWrite: false,
   uniforms: {
-    uBigWavesElevation: {
-      value: 0.2,
+    uPixelRatio: {
+      value: Math.min(window.devicePixelRatio, 2),
     },
-    uBigWavesFrequecy: {
-      value: new THREE.Vector2(4, 1.5),
+    uFireflySize: {
+      value: 40,
     },
     uTime: {
       value: 0,
     },
-    uDepthColor: {
-      value: new THREE.Color(debugObj.depthColor),
-    },
-    uSurfaceColor: {
-      value: new THREE.Color(debugObj.surfaceDepth),
-    },
-    uColorOffset: {
-      value: 0.05,
-    },
-    uColorMultiplier: {
-      value: 0.5,
-    },
   },
 });
 
-// Mesh
-const water = new THREE.Mesh(waterGeometry, waterMaterial);
-water.rotation.x = -Math.PI * 0.5;
-scene.add(water);
-
-gui
-  .add(waterMaterial.uniforms.uBigWavesElevation, "value")
-  .min(0)
-  .max(5)
-  .step(0.001)
-  .name("uBigWavesElevation");
-gui
-  .add(waterMaterial.uniforms.uBigWavesFrequecy.value, "x")
-  .min(0)
-  .max(10)
-  .step(0.001)
-  .name("uBigWavesFrequecyX");
-gui
-  .add(waterMaterial.uniforms.uBigWavesFrequecy.value, "y")
-  .min(0)
-  .max(10)
-  .step(0.001)
-  .name("uBigWavesFrequecyY");
-gui
-  .addColor(debugObj, "depthColor")
-  .name("depthColor")
-  .onChange(() => {
-    waterMaterial.uniforms.uDepthColor.value.set(debugObj.depthColor);
-    waterMaterial.uniforms.uSurfaceColor.value.set(debugObj.surfaceDepth);
-  });
-gui
-  .addColor(debugObj, "surfaceDepth")
-  .name("surfaceDepth")
-  .onChange(() => {
-    waterMaterial.uniforms.uSurfaceColor.value.set(debugObj.surfaceDepth);
-  });
-
-gui
-  .add(waterMaterial.uniforms.uColorOffset, "value")
-  .min(0)
-  .max(1)
-  .step(0.001)
-  .name("uOffsetColor");
-
-gui
-  .add(waterMaterial.uniforms.uColorMultiplier, "value")
-  .min(0)
-  .max(10)
-  .step(1)
-  .name("uColorMultiplier");
-
+const fliers = new THREE.Points(particleGeomtery, fireflyMaterial);
+scene.add(fliers);
 /**
  * Sizes
  */
@@ -126,6 +149,12 @@ window.addEventListener("resize", () => {
   // Update renderer
   renderer.setSize(sizes.width, sizes.height);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.outputEncoding = THREE.sRGBEncoding; // color normalisation output
+
+  fireflyMaterial.uniforms.uPixelRatio.value = Math.min(
+    window.devicePixelRatio,
+    2
+  );
 });
 
 /**
@@ -133,12 +162,14 @@ window.addEventListener("resize", () => {
  */
 // Base camera
 const camera = new THREE.PerspectiveCamera(
-  75,
+  45,
   sizes.width / sizes.height,
   0.1,
   100
 );
-camera.position.set(1, 1, 1);
+camera.position.x = 4;
+camera.position.y = 2;
+camera.position.z = 4;
 scene.add(camera);
 
 // Controls
@@ -150,9 +181,22 @@ controls.enableDamping = true;
  */
 const renderer = new THREE.WebGLRenderer({
   canvas: canvas,
+  antialias: true,
 });
 renderer.setSize(sizes.width, sizes.height);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+debugObj.clearColor = "#ff0000";
+
+gui.addColor(debugObj, "clearColor").onChange(() => {
+  renderer.setClearColor(debugObj.clearColor);
+});
+
+gui
+  .add(fireflyMaterial.uniforms.uFireflySize, "value")
+  .max(500)
+  .min(0)
+  .step(1)
+  .name("uSize");
 
 /**
  * Animate
@@ -161,7 +205,8 @@ const clock = new THREE.Clock();
 
 const tick = () => {
   const elapsedTime = clock.getElapsedTime();
-  waterMaterial.uniforms.uTime.value = elapsedTime;
+
+  fireflyMaterial.uniforms.uTime.value = elapsedTime;
 
   // Update controls
   controls.update();
